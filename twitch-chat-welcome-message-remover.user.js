@@ -1,51 +1,37 @@
 // ==UserScript==
 // @name         Twitch Chat Welcome Message Remover
 // @namespace    https://twitch.tv/
-// @version      1.0
+// @version      1.3
 // @description  Removes the welcome message from the Twitch chat
 // @author       revunix
 // @match        https://www.twitch.tv/*
 // @grant        none
-// @run-at       document-end
+// @run-at       document-start
 // ==/UserScript==
 
 (function () {
     'use strict';
 
-    function removeWelcomeMessage() {
-        const messages = document.querySelectorAll(
-            'div[data-a-target="chat-welcome-message"]'
-        );
-        messages.forEach(el => {
-            el.style.display = 'none';
-        });
+    const style = document.createElement('style');
+    style.textContent = `
+        [data-a-target="chat-welcome-message"] {
+            display: none !important;
+        }
+    `;
+    document.documentElement.appendChild(style);
+
+    function nukeWelcomeMessage() {
+        document
+            .querySelectorAll('[data-a-target="chat-welcome-message"]')
+            .forEach(el => el.remove());
     }
 
-    const observerConfig = {
+    const observer = new MutationObserver(nukeWelcomeMessage);
+
+    observer.observe(document.documentElement, {
         childList: true,
         subtree: true
-    };
+    });
 
-    function startObserver(container) {
-        const observer = new MutationObserver(() => {
-            removeWelcomeMessage();
-        });
-        observer.observe(container, observerConfig);
-        removeWelcomeMessage();
-        console.log('welcomeToTheChat found chat container');
-    }
-
-    function findChatContainer() {
-        return document.querySelector(
-            '[data-test-selector="chat-scrollable-area__message-container"]'
-        );
-    }
-
-    const interval = setInterval(() => {
-        const container = findChatContainer();
-        if (container) {
-            clearInterval(interval);
-            startObserver(container);
-        }
-    }, 1000);
+    setInterval(nukeWelcomeMessage, 500);
 })();
